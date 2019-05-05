@@ -105,7 +105,6 @@ RUN apt-get update && apt-get install -y \
 #    && test "${USE_PYTHON_3_NOT_2}" -eq 1 && true || ${PIP} --no-cache-dir install \
 #    enum34
 
-
 ## Install bazel
 ARG BAZEL_VERSION=0.15.0
 RUN mkdir /bazel && \
