@@ -6,8 +6,8 @@ import collections
 import sklearn
 import random
 
-from math import inf, nan, fabs
-from numpy import linalg
+from math import inf, nan
+#from numpy import linalg
 
 # NOTE: for VarName
 import inspect
@@ -22,6 +22,10 @@ def isList(x):
 def isNumpyArray(x):
     #NOTE: should use python types instead of cmp with string!
     return str(type(x))=="<class 'numpy.ndarray'>" 
+
+def isFloat(x):
+    # is there a python single/double float??
+    return isinstance(x, float) or isinstance(x, np.float32) or isinstance(x, np.float64) or isinstance(x, np.float128)      
 
 def ListToVector(l):
     if not isList(l): 
@@ -38,7 +42,7 @@ def ListToVector(l):
             raise ValueError("cannot handle lists-of-lists")
         a[i]=t
 
-    assert(len(l)==a.shape[0] and a.ndim==1)
+    assert len(l)==a.shape[0] and a.ndim==1
     return a
 
 def ListToMatrix(l):
@@ -63,7 +67,7 @@ def ListToMatrix(l):
                 raise TypeError("did no expect a list-of-list-of-list/array here")
             a[i,j]=t2
 
-    assert(len(l)==a.shape[0] and a.ndim==2)
+    assert len(l)==a.shape[0] and a.ndim==2
     return a
 
 def DToXy(D):
@@ -115,57 +119,65 @@ def XyToD(X, y, y_to_int=True):
     
     return dataset
     
-def CheckFloat(x,checkrange=False,xmin=1E-200,xmax=1E200,verbose=0):
+# Checks that a 'float' is 'sane' 
+def CheckFloat(x, checkrange=False, xmin=1E-200, xmax=1E200, verbose=0):
     if verbose>1:
-        print("CheckFloat(",x,"), type=",type(x))
+        print(f"CheckFloat({x}, type={type(x)}")
     if isinstance(x, collections.Iterable):
-        for i in x:
-            CheckFloat(i,checkrange=checkrange,xmin=xmin,xmax=xmax,verbose=verbose)
+       for i in x:
+            CheckFloat(i, checkrange=checkrange, xmin=xmin, xmax=xmax, verbose=verbose)
     else:
-        if (isinstance(x,int)):
-            return
-        assert(isinstance(x,float)),"x is not a float"
-        assert(np.isnan(x)==False ),"x is NAN"
-        assert(np.isinf(x)==False ),"x is inf"
-        assert(np.isinf(-x)==False),"x is -inf"
+        #if (isinstance(x,int)):
+        #    print("you gave me an integer, that was ignored")
+        #    return
+        assert isFloat(x), f"x={x} is not a float/float64/numpy.float32/64/128, but a type={type(x)}"
+        assert np.isnan(x)==False , "x is NAN"
+        assert np.isinf(x)==False , "x is inf"
+        assert np.isinf(-x)==False, "x is -inf"
         # NOTE: missing test for denormalized float
         if checkrange:
-            z=fabs(x)
-            assert(z>=xmin),"abs(x)="+str(z)+" is smaller that expected min value="+str(xmin)
-            assert(z<=xmax),"abs(x)="+str(z)+" is larger that expected max value="+str(xmax)
+            z=np.fabs(x)
+            assert z>=xmin, f"abs(x)={z} is smaller that expected min value={xmin}"
+            assert z<=xmax, f"abs(x)={z} is larger that expected max value={xmax}"
         if verbose>0:
-             print("CheckFloat(",x,"), type=",type(x)," => OK")
+             print(f"CheckFloat({x}, type={x} => OK")
 
-def AssertInRange(x,e,eps=1E-9,verbose=0):
+# Checks that two 'floats' are 'close' 
+def AssertInRange(x, expected, eps=1E-9, autoconverttofloat=True, verbose=0):
     # NOTE: alternative approach is to use numpy.isclose()    
     if isinstance(x, collections.Iterable):
-        if isinstance(e, collections.Iterable):
+        if isinstance(expected, collections.Iterable):
             n=len(x)
             assert n==len(e)
             for i in range(n):
-                #print("x[",i,"]=",x[i],e[i])
-                AssertInRange(x[i],e[i],eps,verbose)
+                if verbose>2:
+                    print(f"range: x[{i}]={x[i]}, e[{i}]={e[i]}")
+                AssertInRange(x[i], exected[i], eps, autoconvert, verbose)
         else:   
             norm = np.linalg.norm(x)
             if verbose>2:
                 print("norm=",norm)
-            AssertInRange(x=norm,e=e,eps=eps,verbose=verbose)
+            AssertInRange(norm, exected, eps, autoconvert, verbose)
     else:
-        assert eps>=0, "eps is less than zero"        
+        assert eps>=0, "eps is less than zero"
+        if autoconverttofloat and (not isFloat(x) or not isFloat(expected) or not isFloat(eps)):
+            if verbose>1:
+                print(f"notice: autoconverting x={x} to float..")
+            return AssertInRange(1.0*x, 1.0*expected, 1.0*eps, False, verbose)
         CheckFloat(x)
-        CheckFloat(e)
+        CheckFloat(expected)
         CheckFloat(eps)
-        x0=e-eps
-        x1=e+eps
-        ok=x>x0 and x<x1
-        absdiff=fabs(x-e)
-        if verbose>0:
-            print("InRange(x=",x,",e=",e,",eps=",eps,") x in [",x0,";",x1,"]: ",ok)
-        assert ok ,"x="+str(x)+" is not within the range ["+str(x0)+";"+str(x1)+"] for eps="+str(eps)+", got eps="+str(absdiff)
-
-def InRange(x,e,eps=1E-9,verbose=0):
+        x0 = expected - eps
+        x1 = expected + eps
+        ok = x>=x0 and x<=x1
+        absdiff = np.fabs(x-expected)
+        if verbose > 0:
+                        print(f"CheckInRange(x={x}, expected={expected}, eps={eps}: x in [{x0}; {x1}] => {ok}")
+        assert ok, f"x={x} is not within the range [{x0}; {x1}] for eps={eps}, got eps={absdiff}"    
+        
+def InRange(x, expected ,eps=1E-9, verbose=0):
     try:
-        AssertInRange(x,e,eps,verbose)
+        AssertInRange(x, expected, eps, True, verbose)
         return True
     except:
         return False
@@ -203,7 +215,7 @@ def PrintMatrix(X, label="", precision=2, threshold=100, edgeitems=1, linewidth=
     #(m,n)=X.shape
     #buf = StringIO.StringIO()
     if threshold<=0:
-    		threshold = X.size+1
+        threshold = X.size+1
     with printoptions(precision=precision, threshold=threshold, edgeitems=edgeitems, linewidth=linewidth, suppress=suppress):
         #print >> buf (X)
         t=str(X).replace("\n","\n"+s)
@@ -239,7 +251,7 @@ def ShowResult(y, p, label, plotcfm=False):
 
 def GenerateResults(cfm):
     #http://text-analytics101.rxnlp.com/2014/10/computing-precision-and-recall-for.html
-    assert(cfm.shape[0]==cfm.shape[1])
+    assert cfm.shape[0]==cfm.shape[1]
     m = cfm.shape[0];
     precision = numpy.zeros(shape=m)
     recall = numpy.zeros(shape=m)
@@ -265,10 +277,10 @@ def GenerateConfusionMatrix(model, x, y, num_classes):
     n=y.shape[0]
     m=y.shape[1]
 
-    assert(x.shape[0]==y.shape[0])
-    assert(y.shape[0]==p.shape[0])
-    assert(y.shape[1]==cfm.shape[1])
-    assert(m==num_classes)
+    assert x.shape[0]==y.shape[0]
+    assert y.shape[0]==p.shape[0]
+    assert y.shape[1]==cfm.shape[1]
+    assert m==num_classes
 
     def FindYCat(y):
         c=-1
@@ -276,11 +288,11 @@ def GenerateConfusionMatrix(model, x, y, num_classes):
         for j in range(0,m):
             x=y[j]
             if x==1:
-                assert(c==-1)
+                assert c==-1
                 c=j
             else:
-                assert(x==0)
-        assert(c>=0 and c<num_classes)
+                assert x==0
+        assert c>=0 and c<num_classes
         return c
 
     def FindPCat(p):
@@ -289,18 +301,18 @@ def GenerateConfusionMatrix(model, x, y, num_classes):
         m=p.shape[0]
         for j in range(0,m):
             x=p[j]
-            assert(x>=0 and x<=1)
+            assert x>=0 and x<=1
             if x>xmax:
                 xmax=x
             c=j
-        assert(c>=0 and c<num_classes)
+        assert c>=0 and c<num_classes
         return c
 
     for i in range(0,n):
         yc=FindYCat(y[i])
         pc=FindPCat(p[i])
-        assert(yc>=0 and yc<cfm.shape[0])
-        assert(pc>=0 and pc<cfm.shape[1])
+        assert yc>=0 and yc<cfm.shape[0]
+        assert pc>=0 and pc<cfm.shape[1]
         #if (yc==pc):
         #    cfm[yc,yc] = cfm[yc,yc] + 1
         #else:
@@ -347,7 +359,7 @@ def TestCheckFloat():
     except:
         e += 1
 
-    assert(e==5),"Test of CheckFloat() failed"
+    assert e==5,"Test of CheckFloat() failed"
     print("TEST: OK")
 
 def TestVarName():
