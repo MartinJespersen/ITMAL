@@ -4,6 +4,7 @@ TEXDIR=/home/cef/ASE/ITMAL/TeX
 
 pub: hasDAV
 	@ echo "cp lessons.."
+	@ cp -u $(TEXDIR)/lesson01.pdf L01/lesson01.pdf
 	@ cp -v -u -r L?? $(DIR)
 	@ echo "cp libitmal.."
 	@ cp -v -u -r libitmal $(DIR)
@@ -21,8 +22,8 @@ diff: hasDAV
 	diff  $(TEXDIR)/lesson01.pdf L01/lesson01.pdf || echo "DIFFS(2)!"
 	@ echo "OK"
 
-lessons:
-	cp -u $(TEXDIR)/lesson01.pdf L01/lesson01.pdf
+#lessons:
+#	cp -u $(TEXDIR)/lesson01.pdf L01/lesson01.pdf
 
 clean:
 	find . -iname '.ipynb_checkpoints' -exec rm -rf {} \; || true
