@@ -1,5 +1,5 @@
 DAV = /mnt/Dav/ITMAL
-DIR = $(DAV)/"File Sharing"/Src/
+DIR = $(DAV)/"File Sharing"
 TEXDIR=/home/cef/ASE/ITMAL/TeX
 
 pub: hasDAV
