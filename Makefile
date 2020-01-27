@@ -8,6 +8,10 @@ pub: hasDAV
 	@ cp -v -u -r libitmal $(DIR)
 	@ echo "OK"
 
+update:
+	@ git status
+	@ ssh -A -Y itu "cd F20_itmal && git pull"
+
 hasDAV:
 	@ cat /proc/mounts | grep $(DAV) >/dev/null || (echo "ERROR: DAV dir $(DAV) not mounted" && false)	
 
