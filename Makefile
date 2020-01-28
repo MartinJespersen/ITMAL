@@ -3,12 +3,15 @@ DIR = $(DAV)/"File Sharing"
 TEXDIR=/home/cef/ASE/ITMAL/TeX
 
 pub: hasDAV
-	@ echo "cp lessons.."
-	@ cp -u $(TEXDIR)/lesson01.pdf L01/lesson01.pdf
+	@ echo "CP lessons, local.."
+	@ cp -v -u $(TEXDIR)/lesson01.pdf L01/lesson01.pdf
+	@ echo "CP lessons, remote.."
 	@ cp -v -u -r L?? $(DIR)
-	@ echo "cp libitmal.."
+	@ echo "CP libitmal, remote.."
 	@ cp -v -u -r libitmal $(DIR)
-	@ echo "OK"
+	@ git st
+	@ echo -n "Server itu git pull.." && (ssh itu "cd F20_itmal && git pull") || echo "failed"
+	@ echo "ALL OK"
 
 update:
 	@ git status
